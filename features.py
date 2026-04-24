@@ -30,3 +30,12 @@ def fetch_window():
     finally:
         if conn is not None:
             conn.close()
+
+
+def compute_arrival_rate(rows):
+    if not rows:
+        return np.float32(0.0)
+
+    added_count = sum(1 for row in rows if row.get("interaction_type") == "added")
+    per_minute = added_count / (WINDOW_SECONDS / 60)
+    return np.float32(per_minute)
