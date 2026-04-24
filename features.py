@@ -55,3 +55,38 @@ def compute_burstiness(rows):
         added_arrivals[i] - added_arrivals[i - 1] for i in range(1, len(added_arrivals))
     ]
     return np.float32(np.var(inter_arrival_times))
+
+
+def compute_source_entropy(rows):
+    added_rows = [row for row in rows if row.get("interaction_type") == "added"]
+    if len(added_rows) < 2:
+        return np.float32(0.0)
+
+    counts = {}
+    for row in added_rows:
+        app_name = row.get("app_name")
+        counts[app_name] = counts.get(app_name, 0) + 1
+
+    total = len(added_rows)
+    entropy = 0.0
+    for count in counts.values():
+        proportion = count / total
+        entropy -= proportion * math.log2(proportion)
+
+    return np.float32(entropy)
+
+
+def compute_disruption_score(rows):
+    qualifying = [
+        row
+        for row in rows
+        if row.get("interaction_type") == "dismissed"
+        and row.get("response_time") is not None
+        and row.get("response_time") > 0
+    ]
+
+    if not qualifying:
+        return np.float32(0.0)
+
+    score_sum = sum(1.0 / row.get("response_time") for row in qualifying)
+    return np.float32(score_sum / WINDOW_SECONDS)
