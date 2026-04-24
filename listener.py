@@ -3,6 +3,9 @@ import sqlite3
 import time
 
 
+db_conn = None
+
+
 def init_db() -> sqlite3.Connection:
     conn = sqlite3.connect("data/notif_log.db")
     conn.execute(
@@ -119,3 +122,14 @@ async def run_listener() -> None:
 
     while True:
         await asyncio.sleep(1)
+
+
+if __name__ == "__main__":
+    db_conn = init_db()
+    print("Notification listener started. Press Ctrl+C to stop.")
+    try:
+        asyncio.run(run_listener())
+    except KeyboardInterrupt:
+        print("Stopping...")
+        if db_conn is not None:
+            db_conn.close()
