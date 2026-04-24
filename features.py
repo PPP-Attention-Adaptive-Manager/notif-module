@@ -39,3 +39,19 @@ def compute_arrival_rate(rows):
     added_count = sum(1 for row in rows if row.get("interaction_type") == "added")
     per_minute = added_count / (WINDOW_SECONDS / 60)
     return np.float32(per_minute)
+
+
+def compute_burstiness(rows):
+    added_arrivals = sorted(
+        row.get("timestamp_arrival")
+        for row in rows
+        if row.get("interaction_type") == "added"
+    )
+
+    if len(added_arrivals) < 2:
+        return np.float32(0.0)
+
+    inter_arrival_times = [
+        added_arrivals[i] - added_arrivals[i - 1] for i in range(1, len(added_arrivals))
+    ]
+    return np.float32(np.var(inter_arrival_times))
