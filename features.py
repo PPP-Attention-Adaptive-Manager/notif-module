@@ -92,12 +92,33 @@ def compute_disruption_score(rows):
     return np.float32(score_sum / WINDOW_SECONDS)
 
 
-def compute_npi(arrival_rate, burstiness, source_entropy, disruption_score):
+def compute_time_since_last(rows):
+    added_timestamps = [
+        row.get("timestamp_arrival")
+        for row in rows
+        if row.get("interaction_type") == "added"
+    ]
+
+    if not added_timestamps:
+        return np.float32(WINDOW_SECONDS)
+
+    max_timestamp = max(added_timestamps)
+    return np.float32(time.time() - max_timestamp)
+
+
+def compute_npi(
+    arrival_rate,
+    burstiness,
+    source_entropy,
+    disruption_score,
+    time_since_last,
+):
     npi_value = (
-        arrival_rate * 0.35
+        arrival_rate * 0.30
         + burstiness * 0.20
-        + source_entropy * 0.20
+        + source_entropy * 0.15
         + disruption_score * 0.25
+        + time_since_last * 0.10
     )
     return np.float32(np.clip(npi_value, 0.0, 1.0))
 
@@ -109,9 +130,22 @@ def extract_features():
         burstiness = compute_burstiness(rows)
         source_entropy = compute_source_entropy(rows)
         disruption_score = compute_disruption_score(rows)
-        npi = compute_npi(arrival_rate, burstiness, source_entropy, disruption_score)
+        time_since_last = compute_time_since_last(rows)
+        npi = compute_npi(
+            arrival_rate,
+            burstiness,
+            source_entropy,
+            disruption_score,
+            time_since_last,
+        )
         return np.array(
-            [arrival_rate, burstiness, source_entropy, disruption_score, npi],
+            [
+                arrival_rate,
+                burstiness,
+                source_entropy,
+                disruption_score,
+                time_since_last,
+            ],
             dtype=np.float32,
         )
     except Exception as error:
@@ -127,7 +161,7 @@ if __name__ == "__main__":
             print(f"burstiness:       {features[1]:.4f}")
             print(f"source_entropy:   {features[2]:.4f}")
             print(f"disruption_score: {features[3]:.4f}")
-            print(f"npi:              {features[4]:.4f}")
+            print(f"time_since_last:  {features[4]:.4f}")
             time.sleep(5)
     except KeyboardInterrupt:
         print("\nStopped.")
