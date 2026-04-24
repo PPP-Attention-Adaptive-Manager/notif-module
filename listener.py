@@ -1,3 +1,4 @@
+import asyncio
 import sqlite3
 import time
 
@@ -95,3 +96,26 @@ async def on_notification_removed(sender, args) -> None:
         db_conn.commit()
     except Exception as error:
         print(error)
+
+
+async def run_listener() -> None:
+    from winsdk.windows.ui.notifications import UserNotificationChangedKind  # pyright: ignore[reportMissingImports]
+    from winsdk.windows.ui.notifications.management import UserNotificationListener  # pyright: ignore[reportMissingImports]
+
+    listener = UserNotificationListener.current
+    access_status = await listener.request_access_async()
+    print(access_status)
+
+    def _handle_added(sender, args) -> None:
+        if args.change_kind == UserNotificationChangedKind.ADDED:
+            asyncio.create_task(on_notification_added(sender, args))
+
+    def _handle_removed(sender, args) -> None:
+        if args.change_kind == UserNotificationChangedKind.REMOVED:
+            asyncio.create_task(on_notification_removed(sender, args))
+
+    listener.add_notification_changed(_handle_added)
+    listener.add_notification_changed(_handle_removed)
+
+    while True:
+        await asyncio.sleep(1)
