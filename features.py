@@ -100,3 +100,34 @@ def compute_npi(arrival_rate, burstiness, source_entropy, disruption_score):
         + disruption_score * 0.25
     )
     return np.float32(np.clip(npi_value, 0.0, 1.0))
+
+
+def extract_features():
+    try:
+        rows = fetch_window()
+        arrival_rate = compute_arrival_rate(rows)
+        burstiness = compute_burstiness(rows)
+        source_entropy = compute_source_entropy(rows)
+        disruption_score = compute_disruption_score(rows)
+        npi = compute_npi(arrival_rate, burstiness, source_entropy, disruption_score)
+        return np.array(
+            [arrival_rate, burstiness, source_entropy, disruption_score, npi],
+            dtype=np.float32,
+        )
+    except Exception as error:
+        print(error)
+        return np.zeros(5, dtype=np.float32)
+
+
+if __name__ == "__main__":
+    try:
+        while True:
+            features = extract_features()
+            print(f"arrival_rate:     {features[0]:.4f}")
+            print(f"burstiness:       {features[1]:.4f}")
+            print(f"source_entropy:   {features[2]:.4f}")
+            print(f"disruption_score: {features[3]:.4f}")
+            print(f"npi:              {features[4]:.4f}")
+            time.sleep(5)
+    except KeyboardInterrupt:
+        print("\nStopped.")
