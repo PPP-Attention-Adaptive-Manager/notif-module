@@ -90,3 +90,13 @@ def compute_disruption_score(rows):
 
     score_sum = sum(1.0 / row.get("response_time") for row in qualifying)
     return np.float32(score_sum / WINDOW_SECONDS)
+
+
+def compute_npi(arrival_rate, burstiness, source_entropy, disruption_score):
+    npi_value = (
+        arrival_rate * 0.35
+        + burstiness * 0.20
+        + source_entropy * 0.20
+        + disruption_score * 0.25
+    )
+    return np.float32(np.clip(npi_value, 0.0, 1.0))
