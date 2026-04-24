@@ -48,3 +48,50 @@ async def on_notification_added(sender, args) -> None:
         _ = UserNotificationListener
     except Exception as error:
         print(error)
+
+
+async def on_notification_removed(sender, args) -> None:
+    global db_conn
+    try:
+        from winsdk.windows.ui.notifications import UserNotificationChangedKind  # pyright: ignore[reportMissingImports]
+
+        notif_id = args.user_notification.id
+        timestamp_action = time.time()
+        interaction_type = (
+            "dismissed"
+            if args.change_kind == UserNotificationChangedKind.REMOVED
+            else "expired"
+        )
+
+        cursor = db_conn.execute(
+            """
+            SELECT id, timestamp_arrival
+            FROM notifications
+            WHERE notif_id = ?
+            ORDER BY id DESC
+            LIMIT 1
+            """,
+            (notif_id,),
+        )
+        row = cursor.fetchone()
+        if row is None:
+            return
+
+        row_id, timestamp_arrival = row
+        response_time = None
+        if timestamp_arrival is not None:
+            response_time = timestamp_action - timestamp_arrival
+
+        db_conn.execute(
+            """
+            UPDATE notifications
+            SET timestamp_action = ?,
+                interaction_type = ?,
+                response_time = ?
+            WHERE id = ?
+            """,
+            (timestamp_action, interaction_type, response_time, row_id),
+        )
+        db_conn.commit()
+    except Exception as error:
+        print(error)
