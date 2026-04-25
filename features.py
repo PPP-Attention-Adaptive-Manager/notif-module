@@ -100,10 +100,10 @@ def compute_time_since_last(rows):
     ]
 
     if not added_timestamps:
-        return np.float32(WINDOW_SECONDS)
+        return np.float32(1.0)
 
     max_timestamp = max(added_timestamps)
-    return np.float32(time.time() - max_timestamp)
+    return np.float32((time.time() - max_timestamp) / WINDOW_SECONDS)
 
 
 def compute_npi(
