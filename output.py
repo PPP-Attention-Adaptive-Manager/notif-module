@@ -1,5 +1,5 @@
 import numpy as np
-from features import extract_features
+from features import extract_features, compute_npi
 from model import load_model, get_embedding, normalize_features
 
 # Replace these values with the scaler parameters printed
@@ -10,26 +10,17 @@ SCALER_PARAMS = {
 }
 
 
-def compute_npi(features):
-    npi = (
-        features[0] * 0.30
-        + features[1] * 0.20
-        + features[2] * 0.15
-        + features[3] * 0.25
-        + features[4] * 0.10
-    )
-    return float(np.clip(npi, 0.0, 1.0))
-
-
 def compute_state(npi):
-    if npi < 0.25:
-        return "Focus"
-    elif npi < 0.50:
-        return "Normal"
-    elif npi < 0.75:
-        return "Overloaded"
-    else:
+    if npi < 0.20:
+        return "Flow"
+    elif npi < 0.40:
+        return "Neutral"
+    elif npi < 0.60:
+        return "Bored"
+    elif npi < 0.80:
         return "Distracted"
+    else:
+        return "Overloaded"
 
 
 def get_output(session):
@@ -39,16 +30,30 @@ def get_output(session):
     normalized_features = normalize_features(raw_features, SCALER_PARAMS)
     embedding = get_embedding(session, normalized_features)
 
-    return {
+    fusion_output = {
         "embedding": embedding,
         "npi": npi,
         "burstiness": float(raw_features[1]),
         "disruption_score": float(raw_features[3]),
+    }
+    full_output = {
+        **fusion_output,
         "state": state,
         "metadata": {
             "module": "notifications",
             "embedding_dim": 16,
         },
+    }
+    return full_output
+
+
+def get_fusion_output(session):
+    output = get_output(session)
+    return {
+        "embedding": output["embedding"],
+        "npi": output["npi"],
+        "burstiness": output["burstiness"],
+        "disruption_score": output["disruption_score"],
     }
 
 
